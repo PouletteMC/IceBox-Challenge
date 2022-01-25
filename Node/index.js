@@ -59,6 +59,6 @@ function showPortOpen() {
     }
     else {
       console.log(`The difference between the two sensors is ${difference}, uploading data to ThingSpeak`)
-      // client.updateChannel(1637485, {field1: gy30, field2: ldr});
+      client.updateChannel(1637485, {field1: gy30, field2: ldr});
     }
   }
