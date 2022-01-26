@@ -1,3 +1,5 @@
+// We Import the libraries that we need
+
 #include <Wire.h>
 #include <BH1750.h>
 
@@ -7,13 +9,13 @@ int LDR_PIN = A0;
 
 void setup(){
   Serial.begin(9600); // launch the serial monitor
-  Wire.begin(); // Initialize the I2C bus for use by the BH1750 library  
+  Wire.begin(); // Initialize the I2C bus for use by the BH1750  
   GY30.begin(); // Initialize the sensor object
-  Serial.println("Flux Workshop Example");
 }
 void loop() {
   int lux = GY30.readLightLevel(); // read the light level from the sensor and store it in a variable
 
+// Some trickery from the code we were given to get the LDR's data in a similar range to the GY30
   const double k = 5.0/1024;
   const double luxfactor = 50000;
   const double R2 = 100000;
@@ -26,7 +28,8 @@ void loop() {
   double R1 = (5.0/V2 - 1)*R2;
   double lux2 = B*pow(R1,m);
 
-  Serial.println((String)"Light1:" + lux); // print the data to the serial monitor
+// print the data to the serial monitor
+  Serial.println((String)"Light1:" + lux); 
   Serial.println((String)"Light2:" + lux2);  
   delay(1000); // Pause for a second before repeating the sensor poll
 }
