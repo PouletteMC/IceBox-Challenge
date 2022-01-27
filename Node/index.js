@@ -15,6 +15,7 @@ let IceBox
 let Outside
 let Water
 let time
+let firstDetect = false
 
 // Give the thingspeak library our write key and channel ID
 client.attachChannel(1637485, { writeKey:'5NTSJS8JWFXN1FLC'})
@@ -79,6 +80,7 @@ function dataHandler(cube, box, out, water) {
   console.log(`Temperature3: ${out}`)
   console.log(`Water: ${water}`)
   time = prediction(cube, out)
+  // detectWater(water)
   console.log(`Prediction: ${time}`)
   sendData(time)
   client.updateChannel(1637485, { field3: cube, field4: box, field5: out, field6: water, field7: time });
@@ -95,7 +97,7 @@ function sendData(time) {
   }).then(response => {
     console.log(response.data)
   }).catch(error => {
-    console.log(error)
+    console.log(error.data)
   })
 }
 
@@ -103,3 +105,26 @@ function sleep(time) {
   return new Promise((resolve) => setTimeout(resolve, time));
 }
 
+// function detectWater(waterLevel){
+//   if(firstDetect == false && waterLevel > 10) {
+//     firstDetect = true
+//     axios.get(`https://op-dev.icam.fr/~icebox/changeExperienceStatus.php`, {
+//       params: {
+//         idexperience: '71',
+//         secretkey: 'fcac',
+//         newStatus: '1'
+//       }
+//     })
+//   } else if(firstDetect == true && waterLevel < 10) { 
+//     firstDetect = false
+//     axios.get(`https://op-dev.icam.fr/~icebox/changeExperienceStatus.php`, {
+//       params: {
+//         idexperience: '71',
+//         secretkey: 'fcac',
+//         newStatus: '2'
+//       }
+//     })
+//   } else {
+//     console.log('No change')
+//   }
+// }
