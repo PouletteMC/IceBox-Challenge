@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "nodemon index.js"
   },
   "author": "poulette",
   "license": "ISC",
@@ -14,5 +14,8 @@
     "serialport": "^9.2.8",
     "thingspeakclient": "^0.4.0",
     "ws": "^8.4.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15"
   }
 }

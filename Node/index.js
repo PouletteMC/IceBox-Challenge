@@ -2,13 +2,19 @@
 // Import the libraries we will use
 const SerialPort  = require('serialport');
 const ThingSpeakClient = require('thingspeakclient');
+const axios = require('axios');
+
 
 // Create a new instance of the SerialPort class
 const client = new ThingSpeakClient();
+const url = 'https://op-dev.icam.fr/~icebox/'
 
-// Declare our variables on the global scope
-let ldr
-let gy30
+// Declare our variables on the global scope  
+let IceCube
+let IceBox
+let Outside
+let Water
+let time
 
 // Give the thingspeak library our write key and channel ID
 client.attachChannel(1637485, { writeKey:'5NTSJS8JWFXN1FLC'})
@@ -16,8 +22,8 @@ client.attachChannel(1637485, { writeKey:'5NTSJS8JWFXN1FLC'})
 // Get the arduino's serial port from the start command
 const portName = process.argv[2];
 
-// Create a new instance of the SerialPort class with a baudrate of 9600
-let port = new SerialPort(portName, {baudRate: 9600});
+// Create a new instance of the SerialPort class with a baudrate of 115200
+let port = new SerialPort(portName, {baudRate: 115200});
  
 let Readline = SerialPort.parsers.Readline;
 // Listen for the data event
@@ -40,21 +46,12 @@ function showPortOpen() {
 
 // What to do when we receive data
 function readSerialData(data) {
-
-  // Split the data into an array of strings if it starts with 'Light1:'
-  if(data.startsWith('Light1:')){
-    data = data.split(':')
-    gy30 = data[1]
-  } //If the data starts with 'Light2:' we do something else
-  else if(data.startsWith('Light2:')){
-    data = data.split(':')
-    ldr = data[1]
-  } // If the data doesn't abide by the above rules, we tell the user nothing was received
-  else {
-    console.log('No light data, check sensors')
-  }
-  // We run the dataHandler function with the data we received
-  dataHandler(gy30, ldr)
+  data = data.split('|')
+  IceCube = data[0]
+  IceBox = data[1]
+  Outside = data[2]
+  Water = data[3]
+  dataHandler(IceCube, IceBox, Outside, Water)
 }
 
 function showPortClose() {
@@ -67,21 +64,42 @@ function showError(error) {
   process.exit(1)
 }
 
-// This function is called when we receive data and handles the logic
-function dataHandler(gy30, ldr){
-  // Calculate the difference between the two sensor's data to rule out noise and outliers
-  let difference = gy30 - ldr
-  // A bit of JS trickery to trim the result
-  difference = difference.toString()
-  difference = Number(difference.slice(0,4))
-  // We decided on 30 as the cutoff since similar data was always within this range
-  if(difference > 30 || difference < -30){
-    // If the difference is outside of the range, we tell the user that the data is bad and do nothing
-    console.log(`The difference between the two sensors is ${difference}, there may be something wrong`)
-  }
-  else {
-    // If the data is believable, we tell the user and send the data over to ThingSpeak
-    console.log(`The difference between the two sensors is ${difference}, uploading data to ThingSpeak`)
-    client.updateChannel(1637485, {field1: gy30, field2: ldr});
-  }
+function prediction(cube, out){
+  let time = (680)/(1.19*(out-(cube)))
+  let timeSeconds = time*3600
+  let timeString = timeSeconds.toString()
+  let timeFinal = Number(timeString.slice(0,6))
+  return timeFinal
 }
+
+// This function is called when we receive data and handles the logic
+function dataHandler(cube, box, out, water) {
+  console.log(`Temperature1: ${cube}`)
+  console.log(`Temperature2: ${box}`)
+  console.log(`Temperature3: ${out}`)
+  console.log(`Water: ${water}`)
+  time = prediction(cube, out)
+  console.log(`Prediction: ${time}`)
+  sendData(time)
+  client.updateChannel(1637485, { field3: cube, field4: box, field5: out, field6: water, field7: time });
+}
+
+
+function sendData(time) {
+  axios.get(`https://op-dev.icam.fr/~icebox/createPrediction.php`, {
+    params: {
+      prediction: time,
+      idexperience: '71',
+      secretkey: 'fcac'
+    }
+  }).then(response => {
+    console.log(response.data)
+  }).catch(error => {
+    console.log(error)
+  })
+}
+
+function sleep(time) {
+  return new Promise((resolve) => setTimeout(resolve, time));
+}
+

@@ -1,35 +1,63 @@
 // We Import the libraries that we need
 
-#include <Wire.h>
-#include <BH1750.h>
+#include <OneWire.h>
 
-BH1750 GY30; // instantiate a sensor event object
-int LDR_PIN = A0;
 
+const byte ONE_WIRE_BUS = 7;
+
+const int waterPin = A5;
+
+int waterLevel = 0;
+
+const byte SENSOR_ADDRESS_1[] = { 0x28, 0x20, 0xE7, 0x02, 0x00, 0x00, 0x00, 0x24 };
+const byte SENSOR_ADDRESS_2[] = { 0x28, 0x46, 0xA3, 0x03, 0x00, 0x00, 0x00, 0x2C };
+const byte SENSOR_ADDRESS_3[] = { 0x28, 0xD1, 0xD7, 0x01, 0x00, 0x00, 0x00, 0x6D };
+
+OneWire ds(ONE_WIRE_BUS);
+
+float t1;
+float t2;
+float t3;
+
+void startTemperatureMeasure(const byte addr[]){
+  ds.reset();
+  ds.select(addr);
+  ds.write(0x44, 1);
+}
+
+float readTemperatureMeasure(const byte addr[]) {
+  byte data[9];
+  ds.reset();
+  ds.select(addr);
+  ds.write(0xBE);
+
+  for (byte i = 0; i < 9; i++) {
+    data[i] = ds.read();
+  }
+  return (int16_t) ((data[1] << 8) | data[0]) * 0.0625;
+}
 
 void setup(){
-  Serial.begin(9600); // launch the serial monitor
-  Wire.begin(); // Initialize the I2C bus for use by the BH1750  
-  GY30.begin(); // Initialize the sensor object
+  Serial.begin(115200);
 }
+
+
 void loop() {
-  int lux = GY30.readLightLevel(); // read the light level from the sensor and store it in a variable
+  float temperature[3];
+  startTemperatureMeasure(SENSOR_ADDRESS_1);
+  startTemperatureMeasure(SENSOR_ADDRESS_2);
+  startTemperatureMeasure(SENSOR_ADDRESS_3);
+  delay(1000);
+  temperature[0] = readTemperatureMeasure(SENSOR_ADDRESS_1);
+  temperature[1] = readTemperatureMeasure(SENSOR_ADDRESS_2);
+  temperature[2] = readTemperatureMeasure(SENSOR_ADDRESS_3);
+  t1 = temperature[0];
+  t2 = temperature[1];
+  t3 = temperature[2];
 
-// Some trickery from the code we were given to get the LDR's data in a similar range to the GY30
-  const double k = 5.0/1024;
-  const double luxfactor = 50000;
-  const double R2 = 100000;
-  const double LowLightLimit = 200;
-  const double B = 1.3*pow(10.0,7);
-  const double m = -1.4;
-  int ldr = analogRead(LDR_PIN);
+  waterLevel = analogRead(waterPin);
 
-  double V2 = k*ldr;
-  double R1 = (5.0/V2 - 1)*R2;
-  double lux2 = B*pow(R1,m);
+  Serial.println(t1 + (String)"|" + t2 + (String)"|" + t3 + (String)"|" + waterLevel);
 
-// print the data to the serial monitor
-  Serial.println((String)"Light1:" + lux); 
-  Serial.println((String)"Light2:" + lux2);  
-  delay(1000); // Pause for a second before repeating the sensor poll
+  delay(298000);
 }
