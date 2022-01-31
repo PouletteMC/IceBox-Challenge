@@ -15,7 +15,7 @@ let IceBox
 let Outside
 let Water
 let time
-let firstDetect = false
+// let firstDetect = false
 
 // Give the thingspeak library our write key and channel ID
 client.attachChannel(1637485, { writeKey:'5NTSJS8JWFXN1FLC'})
@@ -65,13 +65,6 @@ function showError(error) {
   process.exit(1)
 }
 
-function prediction(cube, out){
-  let time = (680)/(1.19*(out-(cube)))
-  let timeSeconds = time*3600
-  let timeString = timeSeconds.toString()
-  let timeFinal = Number(timeString.slice(0,6))
-  return timeFinal
-}
 
 // This function is called when we receive data and handles the logic
 function dataHandler(cube, box, out, water) {
@@ -80,12 +73,18 @@ function dataHandler(cube, box, out, water) {
   console.log(`Temperature3: ${out}`)
   console.log(`Water: ${water}`)
   time = prediction(cube, out)
-  // detectWater(water)
   console.log(`Prediction: ${time}`)
   sendData(time)
   client.updateChannel(1637485, { field3: cube, field4: box, field5: out, field6: water, field7: time });
 }
 
+function prediction(cube, out){
+  let time = (680)/(1.19*(out-(cube)))
+  let timeSeconds = time*3600
+  let timeString = timeSeconds.toString()
+  let timeFinal = Number(timeString.slice(0,6))
+  return timeFinal
+}
 
 function sendData(time) {
   axios.get(`https://op-dev.icam.fr/~icebox/createPrediction.php`, {
@@ -101,9 +100,9 @@ function sendData(time) {
   })
 }
 
-function sleep(time) {
-  return new Promise((resolve) => setTimeout(resolve, time));
-}
+// function sleep(time) {
+//   return new Promise((resolve) => setTimeout(resolve, time));
+// }
 
 // function detectWater(waterLevel){
 //   if(firstDetect == false && waterLevel > 10) {
